@@ -24,11 +24,22 @@ public class Device {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String imei;
+    private Integer imei;
     private String type;
     private Long deviceMicroserviceId;
 
     @OneToOne(mappedBy = "device")
     private Boitier boitier;
+
+    // Build the entity to dto
+    public DeviceDTO toDTO() {
+        return DeviceDTO.builder()
+                .id(this.id)
+                .deviceMicroserviceId(this.deviceMicroserviceId)
+                .imei(this.imei)
+                .type(this.type)
+                .build();
+    }
+
 
 }

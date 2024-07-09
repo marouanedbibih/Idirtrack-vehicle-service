@@ -32,4 +32,13 @@ public class Client {
 
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Vehicle> vehicles;
+
+    // Build the entity to dto
+    public ClientDTO toDTO() {
+        return ClientDTO.builder()
+                .id(this.id)
+                .userMicroserviceId(this.userMicroserviceId)
+                .name(this.name)
+                .build();
+    }
 }

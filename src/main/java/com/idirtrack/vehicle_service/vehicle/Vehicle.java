@@ -30,7 +30,7 @@ public class Vehicle {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String Matricule;
+    private String matricule;
     private String type;
 
     @ManyToOne
@@ -39,5 +39,14 @@ public class Vehicle {
 
     @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Boitier> boitiers;
+
+    // Build the entity to dto
+    public VehicleDTO toDTO() {
+        return VehicleDTO.builder()
+                .id(this.id)
+                .matricule(this.matricule)
+                .type(this.type)
+                .build();
+    }
     
 }
