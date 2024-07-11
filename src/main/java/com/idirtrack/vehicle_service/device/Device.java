@@ -31,4 +31,15 @@ public class Device {
     @OneToOne(mappedBy = "device")
     private Boitier boitier;
 
+    // Build the entity to dto
+    public DeviceDTO toDTO() {
+        return DeviceDTO.builder()
+                .id(this.id)
+                .deviceMicroserviceId(this.deviceMicroserviceId)
+                .imei(this.imei)
+                .type(this.type)
+                .build();
+    }
+
+
 }

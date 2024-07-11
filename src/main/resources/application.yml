@@ -21,3 +21,8 @@ eureka:
     client:
         service-url:
             defaultZone: ${EUREKA_SERVER_URL}
+
+# logging:
+#   level:
+#     org.springframework.web: DEBUG
+#     org.hibernate: DEBUG

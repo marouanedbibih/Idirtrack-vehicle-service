@@ -1,6 +1,7 @@
 package com.idirtrack.vehicle_service.vehicle;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.idirtrack.vehicle_service.boitier.Boitier;
 import com.idirtrack.vehicle_service.client.Client;
@@ -30,7 +31,7 @@ public class Vehicle {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String Matricule;
+    private String matricule;
     private String type;
 
     @ManyToOne
@@ -39,5 +40,19 @@ public class Vehicle {
 
     @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Boitier> boitiers;
+
+    // Build the entity to dto
+    public VehicleDTO toDTO() {
+        return VehicleDTO.builder()
+                .id(this.id)
+                .matricule(this.matricule)
+                .type(this.type)
+                .build();
+    }
+
+    // Transform the List of entities to List of dtos
+    public static List<VehicleDTO> toDTOList(List<Vehicle> vehicles) {
+        return vehicles.stream().map(Vehicle::toDTO).collect(Collectors.toList());
+    }
     
 }
