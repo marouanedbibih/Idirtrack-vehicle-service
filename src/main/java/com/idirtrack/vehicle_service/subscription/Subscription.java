@@ -1,4 +1,4 @@
-package com.idirtrack.vehicle_service.subscribtion;
+package com.idirtrack.vehicle_service.subscription;
 
 import java.sql.Date;
 
@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Entity
 @Table(name = "subscribtion")
-public class Subscribtion {
+public class Subscription {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,4 +34,13 @@ public class Subscribtion {
     @ManyToOne
     @JoinColumn(name = "boitier_id")
     private Boitier boitier;
+
+    public SubscriptionDTO toDTO() {
+        return SubscriptionDTO.builder()
+                .id(this.id)
+                .startDate(this.startDate)
+                .endDate(this.endDate)
+                .boitierId(this.boitier.getId())
+                .build();
+    }
 }

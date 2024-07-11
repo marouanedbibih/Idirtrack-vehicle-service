@@ -24,7 +24,7 @@ public class Device {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Integer imei;
+    private String imei;
     private String type;
     private Long deviceMicroserviceId;
 

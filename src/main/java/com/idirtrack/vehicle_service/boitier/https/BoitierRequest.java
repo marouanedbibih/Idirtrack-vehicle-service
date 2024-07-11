@@ -1,11 +1,15 @@
 package com.idirtrack.vehicle_service.boitier.https;
 
+import java.sql.Date;
+
 import org.springframework.data.annotation.AccessType;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,8 +25,8 @@ public class BoitierRequest {
     private Long deviceMicroserviceId;
 
     @NotNull(message = "IMEI is required")
-    @Min(value = 100000000, message = "IMEI should be at least 9 digits")
-    private Integer imei;
+    @Size(min = 15, max = 15, message = "IMEI must be 15 characters")
+    private String imei;
 
     @NotBlank(message = "Type is required")
     private String deviceType;
@@ -38,13 +42,10 @@ public class BoitierRequest {
     @NotBlank(message = "SIM type is required")
     private String simType;
 
-
     // Subscription Informations
-    @NotBlank(message = "Start date is required")
-    // @Pattern(regexp = "\\d{2}/\\d{2}/\\d{4}", message = "Start date must be in the format dd/MM/yyyy")
-    private String dateStart;
+    @NotNull(message = "Start date is required")
+    private Date startDate;
 
-    @NotBlank(message = "End date is required")
-    // @Pattern(regexp = "\\d{2}/\\d{2}/\\d{4}", message = "End date must be in the format dd/MM/yyyy")
-    private String dateFin;
+    @NotNull(message = "End date is required")
+    private Date endDate;
 }

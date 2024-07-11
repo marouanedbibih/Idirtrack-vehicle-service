@@ -2,10 +2,12 @@ package com.idirtrack.vehicle_service.boitier;
 
 
 import java.util.List;
+import java.util.stream.Collectors;
 
+import com.idirtrack.vehicle_service.boitier.dto.BoitierDTO;
 import com.idirtrack.vehicle_service.device.Device;
 import com.idirtrack.vehicle_service.sim.Sim;
-import com.idirtrack.vehicle_service.subscribtion.Subscribtion;
+import com.idirtrack.vehicle_service.subscription.Subscription;
 import com.idirtrack.vehicle_service.vehicle.Vehicle;
 
 import jakarta.persistence.CascadeType;
@@ -48,5 +50,21 @@ public class Boitier {
     private Sim sim;
 
     @OneToMany(mappedBy = "boitier", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Subscribtion> subscribtions;
+    private List<Subscription> subscribtions;
+
+    public BoitierDTO toDTO() {
+        return BoitierDTO.builder()
+                .id(this.id)
+                .device(this.device.toDTO())
+                .sim(this.sim.toDTO())
+                .vehicle(this.vehicle.toDTO())
+                .subscriptionsList(this.subscribtions.stream().map(Subscription::toDTO).collect(Collectors.toList()))
+                .build();
+    }
+
+    public static List<BoitierDTO> transformToDTOList(List<Boitier> boitiers) {
+        return boitiers.stream()
+                .map(Boitier::toDTO)
+                .collect(Collectors.toList());
+    }
 }

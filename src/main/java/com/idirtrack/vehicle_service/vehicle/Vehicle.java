@@ -1,6 +1,7 @@
 package com.idirtrack.vehicle_service.vehicle;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.idirtrack.vehicle_service.boitier.Boitier;
 import com.idirtrack.vehicle_service.client.Client;
@@ -47,6 +48,11 @@ public class Vehicle {
                 .matricule(this.matricule)
                 .type(this.type)
                 .build();
+    }
+
+    // Transform the List of entities to List of dtos
+    public static List<VehicleDTO> toDTOList(List<Vehicle> vehicles) {
+        return vehicles.stream().map(Vehicle::toDTO).collect(Collectors.toList());
     }
     
 }

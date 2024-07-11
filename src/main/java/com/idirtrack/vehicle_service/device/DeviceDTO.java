@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 public class DeviceDTO {
     private Long id;
     private Long deviceMicroserviceId;
-    private Integer imei;
+    private String imei;
     private String type;
 
     // Build the dto to entity

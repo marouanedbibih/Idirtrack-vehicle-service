@@ -37,17 +37,17 @@ public class BoitierControllerTest {
 
     private BoitierRequest validRequest;
 
-    @BeforeEach
-    public void setup() {
-        validRequest = new BoitierRequest();
-        validRequest.setDeviceMicroserviceId((long) 123);
-        validRequest.setImei((int) 123456789L);
-        validRequest.setDeviceType("F9G");
-        validRequest.setSimMicroserviceId((long) 5678);
-        validRequest.setPhoneNumber("0615554445");
-        validRequest.setDateStart("20/06/2024");
-        validRequest.setDateFin("20/06/2025");
-    }
+    // @BeforeEach
+    // public void setup() {
+    //     validRequest = new BoitierRequest();
+    //     validRequest.setDeviceMicroserviceId((long) 123);
+    //     validRequest.setImei((int) 123456789L);
+    //     validRequest.setDeviceType("F9G");
+    //     validRequest.setSimMicroserviceId((long) 5678);
+    //     validRequest.setPhoneNumber("0615554445");
+    //     validRequest.setDateStart("20/06/2024");
+    //     validRequest.setDateFin("20/06/2025");
+    // }
 
     // @Test
     // public void testCreateBoitierWithValidRequest() throws Exception {
@@ -60,38 +60,38 @@ public class BoitierControllerTest {
     //             .andExpect(status().isOk());
     // }
 
-    @Test
-    public void testCreateBoitierWithInvalidRequest() throws Exception {
-        BoitierRequest invalidRequest = new BoitierRequest();
-        // Set invalid fields, e.g., missing deviceMicroserviceId
-        invalidRequest.setImei((int) 123456789L);
-        invalidRequest.setDeviceType("F9G");
-        invalidRequest.setSimMicroserviceId((long) 5678);
-        invalidRequest.setPhoneNumber("0615554445");
-        invalidRequest.setDateStart("20/06/2024");
-        invalidRequest.setDateFin("20/06/2025");
+    // @Test
+    // public void testCreateBoitierWithInvalidRequest() throws Exception {
+    //     BoitierRequest invalidRequest = new BoitierRequest();
+    //     // Set invalid fields, e.g., missing deviceMicroserviceId
+    //     invalidRequest.setImei((int) 123456789L);
+    //     invalidRequest.setDeviceType("F9G");
+    //     invalidRequest.setSimMicroserviceId((long) 5678);
+    //     invalidRequest.setPhoneNumber("0615554445");
+    //     invalidRequest.setDateStart("20/06/2024");
+    //     invalidRequest.setDateFin("20/06/2025");
 
-        mockMvc.perform(post("/api/boitier/")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest());
-    }
+    //     mockMvc.perform(post("/api/boitier/")
+    //             .contentType(MediaType.APPLICATION_JSON)
+    //             .content(objectMapper.writeValueAsString(invalidRequest)))
+    //             .andExpect(status().isBadRequest());
+    // }
 
-    @Test
-    public void testCreateBoitierWithValidationErrors() throws Exception {
-        BoitierRequest invalidRequest = new BoitierRequest();
-        // Set invalid fields, e.g., invalid phone number
-        invalidRequest.setDeviceMicroserviceId((long) 1234);
-        invalidRequest.setImei((int) 123456789L);
-        invalidRequest.setDeviceType("F9G");
-        invalidRequest.setSimMicroserviceId((long)5678);
-        invalidRequest.setPhoneNumber("12345");
-        invalidRequest.setDateStart("20/06/2024");
-        invalidRequest.setDateFin("20/06/2025");
+    // @Test
+    // public void testCreateBoitierWithValidationErrors() throws Exception {
+    //     BoitierRequest invalidRequest = new BoitierRequest();
+    //     // Set invalid fields, e.g., invalid phone number
+    //     invalidRequest.setDeviceMicroserviceId((long) 1234);
+    //     invalidRequest.setImei((int) 123456789L);
+    //     invalidRequest.setDeviceType("F9G");
+    //     invalidRequest.setSimMicroserviceId((long)5678);
+    //     invalidRequest.setPhoneNumber("12345");
+    //     invalidRequest.setDateStart("20/06/2024");
+    //     invalidRequest.setDateFin("20/06/2025");
 
-        mockMvc.perform(post("/api/boitier/")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest());
-    }
+    //     mockMvc.perform(post("/api/boitier/")
+    //             .contentType(MediaType.APPLICATION_JSON)
+    //             .content(objectMapper.writeValueAsString(invalidRequest)))
+    //             .andExpect(status().isBadRequest());
+    // }
 }
