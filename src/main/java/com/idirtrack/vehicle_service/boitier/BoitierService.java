@@ -36,7 +36,9 @@ public class BoitierService {
         private SimRepository simRepository;
         @Autowired
         private SubscriptionRepository subscriptionRepository;
-
+        /*
+         * Create new boitier
+         */
         public BasicResponse createNewBoitier(BoitierRequest request) throws BasicException {
                 // Check if the device already exists in the database
                 if (deviceRepository.existsByDeviceMicroserviceId(request.getDeviceMicroserviceId())) {
@@ -119,7 +121,9 @@ public class BoitierService {
 
         }
 
-        // Service: Get all boitiers with pagination
+        /*
+         * Service to get all boitiers with pagination
+         */
         public BasicResponse getAllBoitiers(int page, int size) {
                 // Créer la pagination
                 Pageable pageRequest = PageRequest.of(page - 1, size);
@@ -155,5 +159,36 @@ public class BoitierService {
         // Service: Get boitier by id
         // Service: Update boitier by id
         // Service: Delete boitier by id
+        public BasicResponse deleteBoitierById(Long id) throws BasicException {
+                // Check if the boitier exists in the database
+                if (!boitierRepository.existsById(id)) {
+                        BasicResponse response = BasicResponse.builder()
+                                        .status(HttpStatus.NOT_FOUND)
+                                        .message("Boitier not found")
+                                        .build();
+                        throw new BasicException(response);
+                }
+
+                // Change the status of device in stock microservice to available
+                // Change the status of sim in stock microservice to available
+                /*
+                 * ToDO:
+                 * 1. Call the stock microservice to change the status of the device to available
+                 * 2. Call the stock microservice to change the status of the sim to available
+                 * 3. Check if the device and the sim related to the boitier are deleted also from the database
+                 */
+
+                // Delete the boitier from the database
+                boitierRepository.deleteById(id);
+
+                // Return the response
+                return BasicResponse.builder()
+                                .status(HttpStatus.OK)
+                                .message("Boitier deleted successfully")
+                                .build();
+        }
+        /*
+         * Service for search boitiers
+         */
 
 }
