@@ -11,14 +11,15 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ClientDTO {
     private Long id;
-    private Long userMicroserviceId;
+    private Long clientMicroserviceId;
     private String name;
+    private String company;
 
     // Build dto to entity
     public Client toEntity() {
         return Client.builder()
                 .id(this.id)
-                .userMicroserviceId(this.userMicroserviceId)
+                .clientMicroserviceId(this.clientMicroserviceId)
                 .name(this.name)
                 .build();
     }

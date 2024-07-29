@@ -21,7 +21,7 @@ import com.idirtrack.vehicle_service.vehicle.https.VehicleRequest;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/vehicles")
+@RequestMapping("/vehicle-api/vehicles")
 public class VehcileController {
 
     @Autowired
@@ -46,11 +46,50 @@ public class VehcileController {
         }
     }
 
+    /**
+     * Retrieves a paginated list of vehicles.
+     * 
+     * This endpoint handles GET requests to retrieve vehicles with pagination. It
+     * accepts
+     * the page number and page size as query parameters, with default values
+     * provided. The method
+     * invokes the service layer to get the vehicles and returns a ResponseEntity
+     * with the
+     * appropriate HTTP status and response body.
+     * 
+     * The endpoint performs the following actions:
+     * 1. Calls the {@link VehicleService#getAllVehicles(int, int)} method with the
+     * specified
+     * page number and page size.
+     * 2. Returns a ResponseEntity with the status and body from the service
+     * response.
+     * 3. Catches and handles {@link BasicException} by returning a ResponseEntity
+     * with the error status and message from the exception response.
+     * 4. Catches any other exceptions and returns a ResponseEntity with an internal
+     * server
+     * error status and a generic error message.
+     * 
+     * @param page the page number to retrieve (default is 1)
+     * @param size the number of vehicles per page (default is 5)
+     * @return a ResponseEntity containing the BasicResponse with the list of
+     *         vehicles,
+     *         pagination metadata, and status
+     */
     @GetMapping("/")
-    public ResponseEntity<BasicResponse> getAllVehicles(@RequestParam(defaultValue = "1") int page,
+    public ResponseEntity<BasicResponse> getAllVehicles(
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "5") int size) {
-        return ResponseEntity.ok().body(vehicleService.getAllVehicles(page, size));
-        // BasicResponse response = vehicleService.getAllVehicles();
-        // return ResponseEntity.status(response.getStatus()).body(response);
+        try {
+            BasicResponse response = vehicleService.getAllVehicles(page, size);
+            return ResponseEntity.status(response.getStatus()).body(response);
+        } catch (BasicException e) {
+            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
+        } catch (Exception e) {
+            BasicResponse response = BasicResponse.builder()
+                    .message("Internal Server Error")
+                    .build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
+
 }

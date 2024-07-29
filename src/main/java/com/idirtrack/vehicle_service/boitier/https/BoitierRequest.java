@@ -37,10 +37,14 @@ public class BoitierRequest {
 
     @NotBlank(message = "Phone number is required")
     @Pattern(regexp = "\\d{10}", message = "Phone number must be 10 digits")
-    private String phoneNumber;
+    private String phone;
 
-    @NotBlank(message = "SIM type is required")
-    private String simType;
+    @NotBlank(message = "CCID number is required")
+    @Pattern(regexp = "\\d{18}", message = "CCID number must be 10 digits")
+    private String ccid;
+
+    @NotBlank(message = "Operator is required")
+    private String operatorName;
 
     // Subscription Informations
     @NotNull(message = "Start date is required")

@@ -1,5 +1,5 @@
 package com.idirtrack.vehicle_service.basic;
 
 public enum MessageType {
-    SUCCESS, ERROR
+    SUCCESS, ERROR, WARNING, INFO
 }
