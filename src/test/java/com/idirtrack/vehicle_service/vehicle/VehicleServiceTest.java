@@ -86,7 +86,7 @@ class VehicleServiceTest {
         // Mock request
         VehicleRequest request = VehicleRequest.builder()
                 .matricule("123ABC")
-                .userMicroserviceId((long) 12222L)
+                .clientMicroserviceId((long) 12222L)
                 .clientName("John Doe")
                 .type("Car")
                 .build();

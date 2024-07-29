@@ -19,15 +19,16 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "sim")
+@Table(name = "sims")
 public class Sim {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private Long simMicroserviceId;
-    private String phoneNumber;
-    private String type;
+    private String phone;
+    private String ccid;
+    private String operatorName;
 
     @OneToOne(mappedBy = "sim")
     private Boitier boitier;
@@ -37,8 +38,9 @@ public class Sim {
         return SimDTO.builder()
                 .id(this.id)
                 .simMicroserviceId(this.simMicroserviceId)
-                .phoneNumber(this.phoneNumber)
-                .type(this.type)
+                .phone(this.phone)
+                .operatorName(this.operatorName)
+                .ccid(this.ccid)
                 .build();
     }
 

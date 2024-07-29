@@ -22,7 +22,7 @@ public class VehicleRequest {
     private String type;
 
     @NotNull(message = "User Microservice ID is required")
-    private Long userMicroserviceId;
+    private Long clientMicroserviceId;
 
     @NotBlank(message = "Name is required")
     @Size(max = 255, message = "Name cannot exceed 255 characters")

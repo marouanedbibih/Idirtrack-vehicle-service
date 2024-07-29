@@ -84,8 +84,9 @@ public class BoitierService {
                 // Save the sim in the database
                 Sim sim = Sim.builder()
                                 .simMicroserviceId(request.getSimMicroserviceId())
-                                .phoneNumber(request.getPhoneNumber())
-                                .type(request.getSimType())
+                                .phone(request.getPhone())
+                                .operatorName(request.getOperatorName())
+                                .ccid(request.getCcid())
                                 .build();
                 sim = simRepository.save(sim);
 
@@ -114,7 +115,7 @@ public class BoitierService {
 
                 // Return the response
                 return BasicResponse.builder()
-                                .data(boitierDTO)
+                                .content(boitierDTO)
                                 .status(HttpStatus.CREATED)
                                 .message("Boitier created successfully")
                                 .build();
@@ -151,7 +152,8 @@ public class BoitierService {
                 data.put("metadata", metaData);
 
                 return BasicResponse.builder()
-                                .data(data)
+                                .content(data)
+                                
                                 .status(HttpStatus.OK)
                                 .message("Boitiers retrieved successfully")
                                 .build();

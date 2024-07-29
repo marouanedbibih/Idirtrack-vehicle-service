@@ -80,16 +80,50 @@ public class VehicleService {
                 .build();
     }
 
-    // Service: Get all the vehicles with pagination
-    public BasicResponse getAllVehicles(int page, int size) {
+    /**
+     * Retrieves a paginated list of vehicles.
+     * 
+     * This method performs the following steps:
+     * 1. Creates a pagination request using the provided page number and page size.
+     * 2. Fetches a page of vehicles from the repository.
+     * 3. Throws a {@link BasicException} if no vehicles are found for the specified
+     * page.
+     * 4. Transforms the vehicles into DTOs for the response.
+     * 5. Constructs metadata for pagination, including current page, total pages,
+     * and page size.
+     * 6. Builds and returns a {@link BasicResponse} object containing the vehicle
+     * list, metadata, and status.
+     * 
+     * @param page the page number (1-based index) to retrieve
+     * @param size the number of vehicles per page
+     * @return a {@link BasicResponse} with the list of vehicles, pagination
+     *         metadata, and status
+     * @throws BasicException if no vehicles are found for the specified page
+     */
+    public BasicResponse getAllVehicles(int page, int size) throws BasicException {
+
+        // Create a pagination request
         Pageable pageable = PageRequest.of(page - 1, size);
+
+        // Get Page of vehicles
         Page<Vehicle> vehicles = vehicleRepository.findAll(pageable);
 
+        // Throw exception if the vehicles list is empty
+        if (vehicles.getContent().isEmpty()) {
+            throw new BasicException(BasicResponse.builder()
+                    .message("No vehicles found")
+                    .messageType(MessageType.INFO)
+                    .status(HttpStatus.NOT_FOUND)
+                    .build());
+        }
+
+        // Build the DTO of vehicle resppnse
         List<VehicleResponse> vehiclesResponse = vehicles.getContent().stream()
                 .map(vehicle -> {
                     ClientDTO clientDTO = ClientDTO.builder()
                             .id(vehicle.getClient().getId())
                             .name(vehicle.getClient().getName())
+                            .company(vehicle.getClient().getCompany())
                             .build();
                     return VehicleResponse.builder()
                             .vehicle(vehicle.toDTO())
@@ -98,23 +132,22 @@ public class VehicleService {
                 })
                 .collect(Collectors.toList());
 
+        // Build the metadata object
         MetaData metaData = MetaData.builder()
                 .currentPage(vehicles.getNumber() + 1)
                 .totalPages(vehicles.getTotalPages())
                 .size(vehicles.getSize())
                 .build();
 
-        Map<String, Object> data = Map.of("vehicles", vehiclesResponse, "metaData",metaData);
-
+        // Build the response object
         return BasicResponse.builder()
-                .data(data)
-                .message("Vehicles retrieved successfully")
-                .messageType(MessageType.SUCCESS)
+                .content(vehiclesResponse)
+                .metadata(metaData)
                 .status(HttpStatus.OK)
                 .build();
     }
-    // Service: Get the vehicle by id and her boitiers
 
+    // Service: Get the vehicle by id and her boitiers
     public List<Boitier> attachBoitierToVehicle(Vehicle vehicle, List<Long> boitierIds) throws BasicException {
         // Boucle in boitiers for get the boitier and attach to vehicle
         List<Boitier> boitiersList = new ArrayList<>();
@@ -148,7 +181,7 @@ public class VehicleService {
     // Verify if the client exists in the database, if not, check if it exists in
     // the user microservice
     public Client verifyOrRegisterClient(VehicleRequest request) throws BasicException {
-        if (!clientRepository.existsByUserMicroserviceId(request.getUserMicroserviceId())) {
+        if (!clientRepository.existsByClientMicroserviceId(request.getClientMicroserviceId())) {
             // Boolean result =
             // this.checkIfClientExistsInUserMicroservice(request.getUserMicroserviceId());
             // if (!result) {
@@ -160,13 +193,13 @@ public class VehicleService {
             // }
             return this.saveClient(request);
         } else {
-            return clientRepository.findByUserMicroserviceId(request.getUserMicroserviceId());
+            return clientRepository.findByClientMicroserviceId(request.getClientMicroserviceId());
         }
     }
 
     public Client saveClient(VehicleRequest request) {
         Client client = Client.builder()
-                .userMicroserviceId(request.getUserMicroserviceId())
+                .clientMicroserviceId(request.getClientMicroserviceId())
                 .name(StringUtils.capitalize(request.getClientName()))
                 .build();
         return clientRepository.save(client);

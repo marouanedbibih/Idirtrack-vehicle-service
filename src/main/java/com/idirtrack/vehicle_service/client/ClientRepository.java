@@ -4,6 +4,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ClientRepository extends JpaRepository<Client, Long>{
 
-    Client findByUserMicroserviceId(Long userMicroserviceId);
-    Boolean existsByUserMicroserviceId(Long userMicroserviceId);
+    Client findByClientMicroserviceId(Long clientMicroserviceId);
+    Boolean existsByClientMicroserviceId(Long clientMicroserviceId);
 }

@@ -22,13 +22,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "client")
+@Table(name = "clients")
 public class Client {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Long userMicroserviceId;
+    private Long clientMicroserviceId;
     private String name;
+    private String company;
 
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Vehicle> vehicles;
@@ -37,7 +38,7 @@ public class Client {
     public ClientDTO toDTO() {
         return ClientDTO.builder()
                 .id(this.id)
-                .userMicroserviceId(this.userMicroserviceId)
+                .clientMicroserviceId(this.clientMicroserviceId)
                 .name(this.name)
                 .build();
     }
