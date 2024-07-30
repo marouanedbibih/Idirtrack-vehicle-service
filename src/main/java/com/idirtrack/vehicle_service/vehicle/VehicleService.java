@@ -26,6 +26,8 @@ import com.idirtrack.vehicle_service.client.Client;
 import com.idirtrack.vehicle_service.client.ClientDTO;
 import com.idirtrack.vehicle_service.client.ClientRepository;
 import com.idirtrack.vehicle_service.client.ClientService;
+import com.idirtrack.vehicle_service.device.DeviceService;
+import com.idirtrack.vehicle_service.sim.SimService;
 import com.idirtrack.vehicle_service.traccar.TracCarService;
 import com.idirtrack.vehicle_service.vehicle.https.VehicleRequest;
 import com.idirtrack.vehicle_service.vehicle.https.VehicleResponse;
@@ -59,6 +61,12 @@ public class VehicleService {
 
     @Autowired
     private TracCarService tracCarService;
+
+    @Autowired
+    private DeviceService deviceService;
+
+    @Autowired
+    private SimService simService;
 
     private static final Logger logger = LoggerFactory.getLogger(VehicleService.class);
 
@@ -164,6 +172,29 @@ public class VehicleService {
         for (Boitier boitier : boitiers) {
             boitier.setVehicle(vehicle);
             boitierRepository.save(boitier);
+        }
+
+        // Chnage the status of the boitiers in the stock microservice
+
+        for (Boitier boitier : boitiers) {
+            boolean isDeviceStatusChnaged = deviceService
+                    .changeDeviceStatus(boitier.getDevice().getDeviceMicroserviceId(), "installed");
+            if (!isDeviceStatusChnaged) {
+                throw new BasicException(BasicResponse.builder()
+                        .message("Error while changing the status of the device in the stock microservice")
+                        .messageType(MessageType.WARNING)
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .build());
+            }
+            boolean isSimStatusChanged = simService.changeSimStatus(boitier.getSim().getSimMicroserviceId(), "online");
+
+            if (!isSimStatusChanged) {
+                throw new BasicException(BasicResponse.builder()
+                        .message("Error while changing the status of the sim in the stock microservice")
+                        .messageType(MessageType.WARNING)
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .build());
+            }
         }
 
         return BasicResponse.builder()
