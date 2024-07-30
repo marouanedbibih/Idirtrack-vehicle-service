@@ -1,11 +1,13 @@
 package com.idirtrack.vehicle_service.boitier;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,7 +26,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/boitier")
+@RequestMapping("/vehicle-api/boitier")
 @RequiredArgsConstructor
 public class BoitierController {
 
@@ -35,10 +37,26 @@ public class BoitierController {
     public ResponseEntity<BasicResponse> createBoitier(@Valid @RequestBody BoitierRequest request,
             BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
-            Map<String, String> errors = ValidationUtil.getValidationsErrors(bindingResult);
-            BasicResponse response = BasicResponse.builder()
-                    .messageObject(errors)
-                    .build();
+
+            Map<String, String> errors = new HashMap<>();
+
+            for (FieldError error : bindingResult.getFieldErrors()) {
+                String field = error.getField();
+
+                // Filter errors for device, sim, startDate, and endDate
+                if (field.equals("deviceMicroserviceId") || field.equals("imei") || field.equals("deviceType")) {
+                    errors.put("device", error.getDefaultMessage());
+                } else if (field.equals("simMicroserviceId") || field.equals("phone") || field.equals("ccid")
+                        || field.equals("operatorName")) {
+                    errors.put("sim", error.getDefaultMessage());
+                } else if (field.equals("startDate")) {
+                    errors.put("dateStart", error.getDefaultMessage());
+                } else if (field.equals("endDate")) {
+                    errors.put("dateEnd", error.getDefaultMessage());
+                }
+            }
+
+            BasicResponse response = BasicResponse.builder().messageObject(errors).build();
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 

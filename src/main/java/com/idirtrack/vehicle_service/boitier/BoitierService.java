@@ -24,7 +24,6 @@ import com.idirtrack.vehicle_service.sim.SimRepository;
 import com.idirtrack.vehicle_service.subscription.Subscription;
 import com.idirtrack.vehicle_service.subscription.SubscriptionRepository;
 
-
 @Service
 public class BoitierService {
 
@@ -36,6 +35,7 @@ public class BoitierService {
         private SimRepository simRepository;
         @Autowired
         private SubscriptionRepository subscriptionRepository;
+
         /*
          * Create new boitier
          */
@@ -153,11 +153,12 @@ public class BoitierService {
 
                 return BasicResponse.builder()
                                 .content(data)
-                                
+
                                 .status(HttpStatus.OK)
                                 .message("Boitiers retrieved successfully")
                                 .build();
         }
+
         // Service: Get boitier by id
         // Service: Update boitier by id
         // Service: Delete boitier by id
@@ -175,9 +176,11 @@ public class BoitierService {
                 // Change the status of sim in stock microservice to available
                 /*
                  * ToDO:
-                 * 1. Call the stock microservice to change the status of the device to available
+                 * 1. Call the stock microservice to change the status of the device to
+                 * available
                  * 2. Call the stock microservice to change the status of the sim to available
-                 * 3. Check if the device and the sim related to the boitier are deleted also from the database
+                 * 3. Check if the device and the sim related to the boitier are deleted also
+                 * from the database
                  */
 
                 // Delete the boitier from the database
@@ -189,8 +192,22 @@ public class BoitierService {
                                 .message("Boitier deleted successfully")
                                 .build();
         }
-        /*
-         * Service for search boitiers
+
+        /**
+         * Service to check if list of boitiers exists
+         * 
+         * @param boitierIds
+         * @return Boolean
          */
+
+        public Boolean isExistBoitiers(List<Long> boitierIds) {
+                for (Long boitierId : boitierIds) {
+                        if (!boitierRepository.existsById(boitierId)) {
+                                return false;
+                        }
+                }
+
+                return true;
+        }
 
 }

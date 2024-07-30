@@ -1,6 +1,7 @@
 package com.idirtrack.vehicle_service.vehicle;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.idirtrack.vehicle_service.boitier.Boitier;
@@ -19,6 +20,7 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Data
@@ -39,6 +41,7 @@ public class Vehicle {
     private Client client;
 
     @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @EqualsAndHashCode.Exclude
     private List<Boitier> boitiers;
 
     // Build the entity to dto
@@ -54,5 +57,19 @@ public class Vehicle {
     public static List<VehicleDTO> toDTOList(List<Vehicle> vehicles) {
         return vehicles.stream().map(Vehicle::toDTO).collect(Collectors.toList());
     }
-    
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        Vehicle vehicle = (Vehicle) o;
+        return Objects.equals(id, vehicle.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }
