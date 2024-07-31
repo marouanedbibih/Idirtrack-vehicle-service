@@ -2,7 +2,6 @@ package com.idirtrack.vehicle_service.vehicle;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +10,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.idirtrack.vehicle_service.basic.BasicException;
@@ -22,7 +20,6 @@ import com.idirtrack.vehicle_service.boitier.Boitier;
 import com.idirtrack.vehicle_service.boitier.BoitierRepository;
 import com.idirtrack.vehicle_service.boitier.BoitierService;
 import com.idirtrack.vehicle_service.boitier.dto.BoitierDTO;
-import com.idirtrack.vehicle_service.client.Client;
 import com.idirtrack.vehicle_service.client.ClientDTO;
 import com.idirtrack.vehicle_service.client.ClientRepository;
 import com.idirtrack.vehicle_service.client.ClientService;
@@ -33,9 +30,6 @@ import com.idirtrack.vehicle_service.vehicle.https.VehicleRequest;
 import com.idirtrack.vehicle_service.vehicle.https.VehicleResponse;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import net.bytebuddy.asm.Advice.This;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -337,5 +331,39 @@ public class VehicleService {
     // vehicle = vehicleRepository.save(vehicle);
     // return vehicle;
     // }
+    /**
+     * Retrieves detailed information about a specific vehicle by its ID.
+     *
+     * @param vehicleId the ID of the vehicle to retrieve
+     * @return a BasicResponse with detailed vehicle information
+     * @throws BasicException if the vehicle is not found
+     */
+    public BasicResponse getVehicleById(Long vehicleId) throws BasicException {
+        Vehicle vehicle = vehicleRepository.findById(vehicleId)
+                .orElseThrow(() -> new BasicException(BasicResponse.builder()
+                        .message("Vehicle not found")
+                        .messageType(MessageType.ERROR)
+                        .status(HttpStatus.NOT_FOUND)
+                        .build()));
 
+        // Create a detailed response
+        ClientDTO clientDTO = ClientDTO.builder()
+                .id(vehicle.getClient().getId())
+                .name(vehicle.getClient().getName())
+                .company(vehicle.getClient().getCompany())
+                .build();
+
+        List<BoitierDTO> boitierDetails = Boitier.transformToDTOList(vehicle.getBoitiers());
+
+        VehicleResponse vehicleResponse = VehicleResponse.builder()
+                .vehicle(vehicle.toDTO())
+                .client(clientDTO)
+                .boitiersList(boitierDetails)
+                .build();
+
+        return BasicResponse.builder()
+                .content(vehicleResponse)
+                .status(HttpStatus.OK)
+                .build();
+    }
 }
