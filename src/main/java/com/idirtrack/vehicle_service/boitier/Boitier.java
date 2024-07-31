@@ -1,7 +1,7 @@
 package com.idirtrack.vehicle_service.boitier;
 
-
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.idirtrack.vehicle_service.boitier.dto.BoitierDTO;
@@ -24,7 +24,9 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @Builder
@@ -39,6 +41,8 @@ public class Boitier {
 
     @ManyToOne
     @JoinColumn(name = "vehicle_id")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Vehicle vehicle;
 
     @OneToOne
@@ -50,7 +54,9 @@ public class Boitier {
     private Sim sim;
 
     @OneToMany(mappedBy = "boitier", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Subscription> subscribtions;
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<Subscription> subscriptions;
 
     public BoitierDTO toDTO() {
         return BoitierDTO.builder()
@@ -58,7 +64,7 @@ public class Boitier {
                 .device(this.device.toDTO())
                 .sim(this.sim.toDTO())
                 .vehicle(this.vehicle.toDTO())
-                .subscriptionsList(this.subscribtions.stream().map(Subscription::toDTO).collect(Collectors.toList()))
+                .subscriptionsList(this.subscriptions.stream().map(Subscription::toDTO).collect(Collectors.toList()))
                 .build();
     }
 
@@ -66,5 +72,18 @@ public class Boitier {
         return boitiers.stream()
                 .map(Boitier::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Boitier boitier = (Boitier) o;
+        return Objects.equals(id, boitier.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }

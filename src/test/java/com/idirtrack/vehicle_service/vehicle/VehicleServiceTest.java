@@ -60,46 +60,46 @@ class VehicleServiceTest {
     }
 
     // Vehicle Exists Tests
-    @Test
-    void verifyVehicleDoesNotExist_WhenVehicleDoesNotExist() {
-        String matricule = "123ABC";
-        when(vehicleRepository.existsByMatricule(matricule)).thenReturn(false);
+    // @Test
+    // void verifyVehicleDoesNotExist_WhenVehicleDoesNotExist() {
+    //     String matricule = "123ABC";
+    //     when(vehicleRepository.existsByMatricule(matricule)).thenReturn(false);
 
-        assertDoesNotThrow(() -> vehicleService.verifyVehicleDoesNotExist(matricule));
-    }
+    //     assertDoesNotThrow(() -> vehicleService.verifyVehicleDoesNotExist(matricule));
+    // }
 
-    @Test
-    void verifyVehicleDoesNotExist_WhenVehicleExists() {
-        String matricule = "123ABC";
-        when(vehicleRepository.existsByMatricule(matricule)).thenReturn(true);
+    // @Test
+    // void verifyVehicleDoesNotExist_WhenVehicleExists() {
+    //     String matricule = "123ABC";
+    //     when(vehicleRepository.existsByMatricule(matricule)).thenReturn(true);
 
-        BasicException thrown = assertThrows(BasicException.class,
-                () -> vehicleService.verifyVehicleDoesNotExist(matricule));
+    //     BasicException thrown = assertThrows(BasicException.class,
+    //             () -> vehicleService.verifyVehicleDoesNotExist(matricule));
 
-        assertEquals("Vehicle already exists", thrown.getResponse().getMessage());
-        assertEquals(MessageType.ERROR, thrown.getResponse().getMessageType());
-        assertEquals(HttpStatus.BAD_REQUEST, thrown.getResponse().getStatus());
-    }
+    //     assertEquals("Vehicle already exists", thrown.getResponse().getMessage());
+    //     assertEquals(MessageType.ERROR, thrown.getResponse().getMessageType());
+    //     assertEquals(HttpStatus.BAD_REQUEST, thrown.getResponse().getStatus());
+    // }
 
-    @Test
-    public void testSaveClient() {
-        // Mock request
-        VehicleRequest request = VehicleRequest.builder()
-                .matricule("123ABC")
-                .clientMicroserviceId((long) 12222L)
-                .clientName("John Doe")
-                .type("Car")
-                .build();
+    // @Test
+    // public void testSaveClient() {
+    //     // Mock request
+    //     VehicleRequest request = VehicleRequest.builder()
+    //             .matricule("123ABC")
+    //             .clientMicroserviceId((long) 12222L)
+    //             .clientName("John Doe")
+    //             .type("Car")
+    //             .build();
 
-        // Mock repository method
-        when(clientRepository.save(any())).thenReturn(new Client());
+    //     // Mock repository method
+    //     when(clientRepository.save(any())).thenReturn(new Client());
 
-        // Test method
-        Client client = vehicleService.saveClient(request);
+    //     // Test method
+    //     Client client = vehicleService.saveClient(request);
 
-        // Verify assertions
-        assertNotNull(client);
-    }
+    //     // Verify assertions
+    //     assertNotNull(client);
+    // }
 
     // @Test
     // void verifyOrRegisterClient_ClientDoesNotExistAnywhere() throws BasicException {

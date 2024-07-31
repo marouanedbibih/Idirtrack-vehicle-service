@@ -28,6 +28,10 @@ public class VehicleRequest {
     @Size(max = 255, message = "Name cannot exceed 255 characters")
     private String clientName;
 
+    @NotBlank(message = "Company is required")
+    @Size(max = 255, message = "Company cannot exceed 255 characters")
+    private String clientCompany;
+
     @NotNull(message = "Boitiers IDs are required")
     private List<Long> boitiersIds;
 }

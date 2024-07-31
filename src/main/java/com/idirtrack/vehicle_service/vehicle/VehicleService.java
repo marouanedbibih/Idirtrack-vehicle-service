@@ -20,10 +20,15 @@ import com.idirtrack.vehicle_service.basic.MessageType;
 import com.idirtrack.vehicle_service.basic.MetaData;
 import com.idirtrack.vehicle_service.boitier.Boitier;
 import com.idirtrack.vehicle_service.boitier.BoitierRepository;
+import com.idirtrack.vehicle_service.boitier.BoitierService;
 import com.idirtrack.vehicle_service.boitier.dto.BoitierDTO;
 import com.idirtrack.vehicle_service.client.Client;
 import com.idirtrack.vehicle_service.client.ClientDTO;
 import com.idirtrack.vehicle_service.client.ClientRepository;
+import com.idirtrack.vehicle_service.client.ClientService;
+import com.idirtrack.vehicle_service.device.DeviceService;
+import com.idirtrack.vehicle_service.sim.SimService;
+import com.idirtrack.vehicle_service.traccar.TracCarService;
 import com.idirtrack.vehicle_service.vehicle.https.VehicleRequest;
 import com.idirtrack.vehicle_service.vehicle.https.VehicleResponse;
 
@@ -48,35 +53,154 @@ public class VehicleService {
     @Autowired
     private BoitierRepository boitierRepository;
 
+    @Autowired
+    private ClientService clientService;
+
+    @Autowired
+    private BoitierService boitierService;
+
+    @Autowired
+    private TracCarService tracCarService;
+
+    @Autowired
+    private DeviceService deviceService;
+
+    @Autowired
+    private SimService simService;
+
     private static final Logger logger = LoggerFactory.getLogger(VehicleService.class);
 
     public BasicResponse createNewVehicle(VehicleRequest request) throws BasicException {
         // Verify if the vehicle does not already exist by matricule
-        this.verifyVehicleDoesNotExist(request.getMatricule());
-        // Verify if the client exists in the database, if not, check if it exists in
-        // the user microservice
-        Client client = verifyOrRegisterClient(request);
-        // Save the vehicle in database
-        Vehicle vehicle = saveVehicleInDatabase(request, client);
-        // Atache the vehicle to boities
-        List<Boitier> boitiersList = attachBoitierToVehicle(vehicle, request.getBoitiersIds());
+        if (vehicleRepository.existsByMatricule(request.getMatricule())) {
+            throw new BasicException(BasicResponse.builder()
+                    .message("Vehicle already exists")
+                    .messageType(MessageType.ERROR)
+                    .status(HttpStatus.CONFLICT)
+                    .build());
 
-        // Transform the List<Boitier> to List<BoitierDTO>
-        List<BoitierDTO> boitiersDTOList = Boitier.transformToDTOList(boitiersList);
+        }
 
-        // Stock Algorithm in the stock microservice
-        // Save the boitier in TracCar microservice
+        // Check if the client exists in User Microservice if not, throw an exception
+        // if the user exist in the user microservice, check if the client exists in the
+        // database
+        // if the client does not exist in the database, save the client
+        // if the client exists in the database, get the client
+        if (!clientService.isExistInUserMicroservice(
+                request.getClientMicroserviceId(),
+                request.getClientName(),
+                request.getClientCompany())) {
+            throw new BasicException(BasicResponse.builder()
+                    .message("Client does not exist in the Client Microservice")
+                    .messageType(MessageType.ERROR)
+                    .status(HttpStatus.BAD_REQUEST)
+                    .build());
+        } else {
+            if (!clientRepository.existsByClientMicroserviceId(request.getClientMicroserviceId())) {
+                try {
+                    clientService.saveClient(request);
+                    logger.info("Client saved successfully");
+                } catch (Exception e) {
+                    throw new BasicException(BasicResponse.builder()
+                            .message(e.getMessage())
+                            .messageType(MessageType.ERROR)
+                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .build());
+                }
+            }
+        }
 
-        // VehicleResponse vehicleResponse = VehicleResponse.builder()
-        // .vehicle(vehicle.toDTO())
-        // .client(client.toDTO())
-        // .boitiersList(boitiersDTOList)
-        // .build();
+        /*
+         * Check if the boitiers exist in the database and are not already attached to
+         * another vehicle
+         * 
+         * If one boitier not exist in the database, throw an exception
+         * If one boitier is already attached to another vehicle, throw an exception
+         */
+        List<Boitier> boitiers = new ArrayList<>();
+        for (Long boitierId : request.getBoitiersIds()) {
+
+            // Check if the boitier exists in the database
+            Boitier boitier = boitierRepository.findById(boitierId)
+                    .orElseThrow(() -> new BasicException(BasicResponse.builder()
+                            .message("Boitier not found")
+                            .messageType(MessageType.ERROR)
+                            .status(HttpStatus.NOT_FOUND)
+                            .build()));
+            // Check if the boitier is already attached to a vehicle
+            if (boitier.getVehicle() != null) {
+                String message = "Boitier with the phone " + boitier.getSim().getPhone() + " and device IMEI "
+                        + boitier.getDevice().getImei() + " already attached to a vehicle";
+                throw new BasicException(BasicResponse.builder()
+                        .message(message)
+                        .messageType(MessageType.WARNING)
+                        .status(HttpStatus.CONFLICT)
+                        .build());
+            }
+
+            // Add the boitier to the list of boitiers
+            boitiers.add(boitier);
+        }
+
+        // Save the Boities in TracCar Microservice
+        for (Boitier boitier : boitiers) {
+            boolean isSaved = tracCarService.createDevice(
+                    request.getClientName(),
+                    boitier.getDevice().getImei(),
+                    request.getClientCompany(),
+                    request.getMatricule());
+            if (!isSaved) {
+                throw new BasicException(BasicResponse.builder()
+                        .message("Error while saving the boitier in TracCar Microservice")
+                        .messageType(MessageType.WARNING)
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .build());
+            }
+        }
+
+        // Attach Boitiers to the vehicle and save the vehicle in the database
+        Vehicle vehicle = Vehicle.builder()
+                .matricule(request.getMatricule())
+                .client(clientRepository.findByClientMicroserviceId(request.getClientMicroserviceId()))
+                .type(request.getType())
+                .boitiers(boitiers)
+                .build();
+
+        vehicle = vehicleRepository.save(vehicle);
+
+        // Attach vehicle to boitiers
+        for (Boitier boitier : boitiers) {
+            boitier.setVehicle(vehicle);
+            boitierRepository.save(boitier);
+        }
+
+        // Chnage the status of the boitiers in the stock microservice
+
+        for (Boitier boitier : boitiers) {
+            boolean isDeviceStatusChnaged = deviceService
+                    .changeDeviceStatus(boitier.getDevice().getDeviceMicroserviceId(), "installed");
+            if (!isDeviceStatusChnaged) {
+                throw new BasicException(BasicResponse.builder()
+                        .message("Error while changing the status of the device in the stock microservice")
+                        .messageType(MessageType.WARNING)
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .build());
+            }
+            boolean isSimStatusChanged = simService.changeSimStatus(boitier.getSim().getSimMicroserviceId(), "online");
+
+            if (!isSimStatusChanged) {
+                throw new BasicException(BasicResponse.builder()
+                        .message("Error while changing the status of the sim in the stock microservice")
+                        .messageType(MessageType.WARNING)
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .build());
+            }
+        }
+
         return BasicResponse.builder()
-                // .data(vehicleResponse)
                 .message("Vehicle created successfully")
-                .messageType(MessageType.SUCCESS)
-                .status(HttpStatus.OK)
+                .messageType(MessageType.INFO)
+                .status(HttpStatus.CREATED)
                 .build();
     }
 
@@ -168,60 +292,50 @@ public class VehicleService {
     }
 
     // Verify if the vehicle does not already exist by matricule
-    public void verifyVehicleDoesNotExist(String matricule) throws BasicException {
-        if (vehicleRepository.existsByMatricule(matricule)) {
-            throw new BasicException(BasicResponse.builder()
-                    .message("Vehicle already exists")
-                    .messageType(MessageType.ERROR)
-                    .status(HttpStatus.BAD_REQUEST)
-                    .build());
-        }
-    }
+    // public void verifyVehicleDoesNotExist(String matricule) throws BasicException
+    // {
+    // if (vehicleRepository.existsByMatricule(matricule)) {
+    // throw new BasicException(BasicResponse.builder()
+    // .message("Vehicle already exists")
+    // .messageType(MessageType.ERROR)
+    // .status(HttpStatus.BAD_REQUEST)
+    // .build());
+    // }
+    // }
 
     // Verify if the client exists in the database, if not, check if it exists in
     // the user microservice
-    public Client verifyOrRegisterClient(VehicleRequest request) throws BasicException {
-        if (!clientRepository.existsByClientMicroserviceId(request.getClientMicroserviceId())) {
-            // Boolean result =
-            // this.checkIfClientExistsInUserMicroservice(request.getUserMicroserviceId());
-            // if (!result) {
-            // throw new BasicException(BasicResponse.builder()
-            // .message("Client does not exist")
-            // .messageType(MessageType.ERROR)
-            // .status(HttpStatus.BAD_REQUEST)
-            // .build());
-            // }
-            return this.saveClient(request);
-        } else {
-            return clientRepository.findByClientMicroserviceId(request.getClientMicroserviceId());
-        }
-    }
+    // public Client verifyOrRegisterClient(VehicleRequest request) throws
+    // BasicException {
+    // if
+    // (!clientRepository.existsByClientMicroserviceId(request.getClientMicroserviceId()))
+    // {
+    // // Boolean result =
+    // //
+    // this.checkIfClientExistsInUserMicroservice(request.getUserMicroserviceId());
+    // // if (!result) {
+    // // throw new BasicException(BasicResponse.builder()
+    // // .message("Client does not exist")
+    // // .messageType(MessageType.ERROR)
+    // // .status(HttpStatus.BAD_REQUEST)
+    // // .build());
+    // // }
+    // return this.saveClient(request);
+    // } else {
+    // return
+    // clientRepository.findByClientMicroserviceId(request.getClientMicroserviceId());
+    // }
+    // }
 
-    public Client saveClient(VehicleRequest request) {
-        Client client = Client.builder()
-                .clientMicroserviceId(request.getClientMicroserviceId())
-                .name(StringUtils.capitalize(request.getClientName()))
-                .build();
-        return clientRepository.save(client);
-    }
-
-    private Vehicle saveVehicleInDatabase(VehicleRequest request, Client client) {
-        Vehicle vehicle = Vehicle.builder()
-                .matricule(request.getMatricule())
-                .client(client)
-                .type(request.getType())
-                .build();
-        vehicle = vehicleRepository.save(vehicle);
-        return vehicle;
-    }
-
-    public Boolean checkIfClientExistsInUserMicroservice(Long userMicroserviceId) {
-        return webClientBuilder.build()
-                .get()
-                .uri("http://user-service/api/client/check-if-exists/" + userMicroserviceId)
-                .retrieve()
-                .bodyToMono(Boolean.class)
-                .block();
-    }
+    // private Vehicle saveVehicleInDatabase(VehicleRequest request, Client client)
+    // {
+    // Vehicle vehicle = Vehicle.builder()
+    // .matricule(request.getMatricule())
+    // .client(client)
+    // .type(request.getType())
+    // .build();
+    // vehicle = vehicleRepository.save(vehicle);
+    // return vehicle;
+    // }
 
 }

@@ -40,7 +40,7 @@ public class BoitierRequest {
     private String phone;
 
     @NotBlank(message = "CCID number is required")
-    @Pattern(regexp = "\\d{18}", message = "CCID number must be 10 digits")
+    @Pattern(regexp = "\\d{18}", message = "CCID number must be 18 digits")
     private String ccid;
 
     @NotBlank(message = "Operator is required")
