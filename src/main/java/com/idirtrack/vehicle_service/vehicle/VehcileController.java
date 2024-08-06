@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -92,4 +93,18 @@ public class VehcileController {
         }
     }
 
+    @GetMapping("/{vehicleId}")
+    public ResponseEntity<BasicResponse> getVehicleById(@PathVariable Long vehicleId) {
+        try {
+            BasicResponse response = vehicleService.getVehicleById(vehicleId);
+            return ResponseEntity.status(response.getStatus()).body(response);
+        } catch (BasicException e) {
+            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
+        } catch (Exception e) {
+            BasicResponse response = BasicResponse.builder()
+                    .message("Internal Server Error")
+                    .build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
 }
