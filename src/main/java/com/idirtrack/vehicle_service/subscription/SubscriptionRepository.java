@@ -9,5 +9,7 @@ import com.idirtrack.vehicle_service.boitier.Boitier;
 public interface SubscriptionRepository extends JpaRepository<Subscription, Long>{
 
     List<Subscription> findAllByBoitier(Boitier boitier);
+    //find all subscriptions by boitier id
+    List<Subscription> findAllByBoitierId(Long boitierId);
     
 }
