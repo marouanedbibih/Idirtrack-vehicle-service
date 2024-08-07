@@ -76,6 +76,16 @@ public class BoitierController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<BasicResponse> getBoitierById(@PathVariable Long id) {
+        try {
+            BasicResponse response = boitierService.getBoitierById(id);
+            return ResponseEntity.status(HttpStatus.OK).body(response);
+        } catch (BasicException e) {
+            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
+        }
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<BasicResponse> deleteBoitier(@PathVariable Long id) {
         try {
