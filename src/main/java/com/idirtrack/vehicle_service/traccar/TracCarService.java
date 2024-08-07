@@ -35,7 +35,7 @@ public class TracCarService {
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         // add basic auth with username and password idirtech idirtech
-        headers.setBasicAuth("idirtech ", "idirtech");
+        headers.setBasicAuth("idirtech ", "idirtech1");
 
         // Create the HttpEntity
         HttpEntity<TracCarDeviceRequest> entity = new HttpEntity<>(request, headers);

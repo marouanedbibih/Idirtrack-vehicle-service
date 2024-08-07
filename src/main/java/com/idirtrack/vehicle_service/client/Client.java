@@ -40,6 +40,7 @@ public class Client {
                 .id(this.id)
                 .clientMicroserviceId(this.clientMicroserviceId)
                 .name(this.name)
+                .company(this.company)
                 .build();
     }
 }
