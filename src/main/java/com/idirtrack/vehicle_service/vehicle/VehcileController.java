@@ -1,5 +1,6 @@
 package com.idirtrack.vehicle_service.vehicle;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.idirtrack.vehicle_service.basic.BasicException;
 import com.idirtrack.vehicle_service.basic.BasicResponse;
+import com.idirtrack.vehicle_service.utils.Error;
 import com.idirtrack.vehicle_service.utils.ValidationUtil;
+import com.idirtrack.vehicle_service.utils.ValidationUtils;
 import com.idirtrack.vehicle_service.vehicle.https.VehicleRequest;
 
 import jakarta.validation.Valid;
@@ -31,20 +34,35 @@ public class VehcileController {
     @PostMapping("/")
     public ResponseEntity<BasicResponse> createNewVehicle(@Valid @RequestBody VehicleRequest request,
             BindingResult bindingResult) {
+        // Validate the request body
         if (bindingResult.hasErrors()) {
-            Map<String, String> errors = ValidationUtil.getValidationsErrors(bindingResult);
-            BasicResponse response = BasicResponse.builder()
-                    .messageObject(errors)
-                    .build();
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            List<Error> errors = ValidationUtils.extractErrorsFromBindingResult(bindingResult);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(BasicResponse.builder()
+                    .message("Validation Error")
+                    .errorsList(errors)
+                    .build());
+        } 
+        // If the request is valid
+        else {
+            // Try to create the new vehicle
+            try {
+                BasicResponse response = vehicleService.createNewVehicle(request);
+                return ResponseEntity.status(response.getStatus()).body(response);
+            }
+            // Catch and handle BasicException
+            catch (BasicException e) {
+                return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
+            }
+            // Catch and handle any other exception
+            catch (Exception e) {
+                System.out.println(e);
+                BasicResponse response = BasicResponse.builder()
+                        .message("Internal Server Error")
+                        .build();
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            }
         }
 
-        try {
-            BasicResponse response = vehicleService.createNewVehicle(request);
-            return ResponseEntity.status(response.getStatus()).body(response);
-        } catch (BasicException e) {
-            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
-        }
     }
 
     /**
