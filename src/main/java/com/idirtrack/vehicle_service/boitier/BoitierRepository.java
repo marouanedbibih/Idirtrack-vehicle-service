@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface BoitierRepository extends JpaRepository<Boitier, Long> {
     
     Page<Boitier> findAll(Pageable pageable);
+
+    Page<Boitier> findAllByVehicleIsNull(Pageable pageRequest);
 }

@@ -1,6 +1,8 @@
 package com.idirtrack.vehicle_service.boitier;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,8 @@ import com.idirtrack.vehicle_service.utils.ValidationUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import com.idirtrack.vehicle_service.utils.Error;
+
 @RestController
 @RequestMapping("/vehicle-api/boitier")
 @RequiredArgsConstructor
@@ -38,25 +42,26 @@ public class BoitierController {
             BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
 
-            Map<String, String> errors = new HashMap<>();
+            List<Error> errors = new ArrayList<>();
 
             for (FieldError error : bindingResult.getFieldErrors()) {
                 String field = error.getField();
 
                 // Filter errors for device, sim, startDate, and endDate
-                if (field.equals("deviceMicroserviceId") || field.equals("imei") || field.equals("deviceType")) {
-                    errors.put("device", error.getDefaultMessage());
-                } else if (field.equals("simMicroserviceId") || field.equals("phone") || field.equals("ccid")
-                        || field.equals("operatorName")) {
-                    errors.put("sim", error.getDefaultMessage());
+                if (field.equals("deviceMicroserviceId")) {
+                    errors.add(Error.builder().key("device").message(error.getDefaultMessage()).build());
+                } else if (field.equals("simMicroserviceId")) {
+                    errors.add(Error.builder().key("sim").message(error.getDefaultMessage()).build());
                 } else if (field.equals("startDate")) {
-                    errors.put("dateStart", error.getDefaultMessage());
+                    errors.add(Error.builder().key("dateStart").message(error.getDefaultMessage()).build());
                 } else if (field.equals("endDate")) {
-                    errors.put("dateEnd", error.getDefaultMessage());
+                    errors.add(Error.builder().key("dateEnd").message(error.getDefaultMessage()).build());
                 }
             }
 
-            BasicResponse response = BasicResponse.builder().messageObject(errors).build();
+            BasicResponse response = BasicResponse.builder()
+                    .errorsList(errors)
+                    .build();
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
@@ -76,14 +81,71 @@ public class BoitierController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<BasicResponse> deleteBoitier(@PathVariable Long id) {
+
+    /**
+     * GET BOITIER BY ID
+     *
+     * @param id
+     * @return
+     */
+    @GetMapping("/{id}/")
+    public ResponseEntity<BasicResponse> getBoitierById(@PathVariable Long id) {
+        // Try to get the boitier by id
         try {
-            BasicResponse response = boitierService.deleteBoitierById(id);
+            BasicResponse response = boitierService.getBoitierById(id);
             return ResponseEntity.status(HttpStatus.OK).body(response);
-        } catch (BasicException e) {
+        }
+        // Catch a BasicException if the boitier is not found
+        catch (BasicException e) {
             return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
         }
+        // Catch any other exceptions
+        catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BasicResponse.builder().message("Internal Server Error").build());
+        }
+    }
 
+    /**
+     * GET LIST OF BOITIERS NOT ASSOCIATED WITH A VEHICLE
+     * 
+     * @param page
+     * @param size
+     * @return ResponseEntity<BasicResponse>
+     */
+
+    @GetMapping("/unassigned/")
+    public ResponseEntity<BasicResponse> getUnassignedBoitiers(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "5") int size) {
+        // Try to get the list of unassigned boitiers
+        try {
+            BasicResponse response = boitierService.getUnassignedBoitiers(page, size);
+            return ResponseEntity.status(HttpStatus.OK).body(response);
+        }
+        // Catch any BasicExceptions
+        catch (BasicException e) {
+            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
+        }
+    }
+
+    /**
+     * DELETE BOITIER BY ID
+     * 
+     * This endpoint deletes a boitier by id
+     * @param id
+     * @return ResponseEntity<BasicResponse>
+     */
+
+    @DeleteMapping("/{id}/")
+    public ResponseEntity<BasicResponse> deleteBoitierById(@PathVariable Long id,@RequestParam boolean isLost) {
+        // Try to delete the boitier by id
+        try {
+            BasicResponse response = boitierService.deleteBoitierById(id,isLost);
+            return ResponseEntity.status(HttpStatus.OK).body(response);
+        }
+        // Catch any BasicExceptions
+        catch (BasicException e) {
+            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
+        }
     }
 }
