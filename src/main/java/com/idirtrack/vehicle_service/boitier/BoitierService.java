@@ -18,6 +18,7 @@ import com.idirtrack.vehicle_service.basic.BasicException;
 import com.idirtrack.vehicle_service.basic.BasicResponse;
 import com.idirtrack.vehicle_service.basic.MetaData;
 import com.idirtrack.vehicle_service.boitier.dto.BoitierDTO;
+import com.idirtrack.vehicle_service.boitier.https.BoitierGetByIDResponse;
 import com.idirtrack.vehicle_service.boitier.https.BoitierRequest;
 import com.idirtrack.vehicle_service.device.Device;
 import com.idirtrack.vehicle_service.device.DeviceDTO;
@@ -331,20 +332,25 @@ public class BoitierService {
                                                 .message("Boitier not found")
                                                 .build()));
 
-                // Create DTOs for the response
-                BoitierDTO boitierDTO = BoitierDTO.builder()
-                                .id(boitier.getId())
-                                .device(boitier.getDevice().toDTO())
-                                .sim(boitier.getSim().toDTO())
-                                .build();
+                // Create BoitierGetByIDResponse 
+                BoitierGetByIDResponse boitierGetByIDResponse = BoitierGetByIDResponse.builder()
+                .deviceMicroserviceId(boitier.getDevice().getDeviceMicroserviceId())
+                .simMicroserviceId(boitier.getSim().getSimMicroserviceId())
+                .startDate(boitier.getSubscriptions().getLast().getStartDate())
+                .endDate(boitier.getSubscriptions().getLast().getEndDate()).build();
+                               
+               
 
                 // Return the response
                 return BasicResponse.builder()
-                                .content(boitierDTO)
+                                .content(boitierGetByIDResponse)
                                 .status(HttpStatus.OK)
                                 .message("Boitier retrieved successfully")
                                 .build();
         }
+
+        
+
 
         /**
          * GET LIST OF BOITIERS NOT ASSOCIATED WITH A VEHICLE

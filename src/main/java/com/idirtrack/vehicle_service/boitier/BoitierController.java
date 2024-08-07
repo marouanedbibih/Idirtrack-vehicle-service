@@ -82,6 +82,7 @@ public class BoitierController {
     }
 
 
+
     /**
      * GET BOITIER BY ID
      *
@@ -90,6 +91,8 @@ public class BoitierController {
      */
     @GetMapping("/{id}/")
     public ResponseEntity<BasicResponse> getBoitierById(@PathVariable Long id) {
+
+
         // Try to get the boitier by id
         try {
             BasicResponse response = boitierService.getBoitierById(id);
