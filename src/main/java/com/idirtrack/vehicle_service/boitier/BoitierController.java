@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -149,6 +150,44 @@ public class BoitierController {
         // Catch any BasicExceptions
         catch (BasicException e) {
             return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
+        }
+    }
+
+    //update boitier by id
+    @PutMapping("/{id}/")
+    public ResponseEntity<BasicResponse> updateBoitierById(@PathVariable Long id, @Valid @RequestBody BoitierRequest request,
+            BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+
+            List<Error> errors = new ArrayList<>();
+
+            for (FieldError error : bindingResult.getFieldErrors()) {
+                String field = error.getField();
+
+                // Filter errors for device, sim, startDate, and endDate
+                if (field.equals("deviceMicroserviceId")) {
+                    errors.add(Error.builder().key("device").message(error.getDefaultMessage()).build());
+                } else if (field.equals("simMicroserviceId")) {
+                    errors.add(Error.builder().key("sim").message(error.getDefaultMessage()).build());
+                } else if (field.equals("startDate")) {
+                    errors.add(Error.builder().key("dateStart").message(error.getDefaultMessage()).build());
+                } else if (field.equals("endDate")) {
+                    errors.add(Error.builder().key("dateEnd").message(error.getDefaultMessage()).build());
+                }
+            }
+
+            BasicResponse response = BasicResponse.builder()
+                    .errorsList(errors)
+                    .build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+
+        try {
+            BasicResponse response = boitierService.updateBoitierById(id,request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (BasicException e) {
+
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getResponse());
         }
     }
 }

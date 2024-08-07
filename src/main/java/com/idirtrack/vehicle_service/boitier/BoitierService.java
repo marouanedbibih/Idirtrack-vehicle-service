@@ -189,6 +189,186 @@ public class BoitierService {
         }
 
         /*
+         * update boitier process
+         * check if the boitier exists
+         * check if the new device  used in another boitier
+         * check if the new sim used in another boitier
+         * check if the start date is before the end date
+         * check if the start date is before the current date
+         * 
+         * 
+         */
+        public BasicResponse updateBoitierById(Long id, BoitierRequest request) throws BasicException {
+                List<Error> errors = new ArrayList<>();
+            
+                // Find the boitier by id
+                Boitier boitier = boitierRepository.findById(id)
+                        .orElseThrow(() -> new BasicException(BasicResponse.builder()
+                                .status(HttpStatus.NOT_FOUND)
+                                .message("Boitier not found")
+                                .build()));
+            
+                // Check if the new device already exists in another boitier
+                if (!boitier.getDevice().getDeviceMicroserviceId().equals(request.getDeviceMicroserviceId())
+                        && deviceRepository.existsByDeviceMicroserviceId(request.getDeviceMicroserviceId())) {
+                    errors.add(Error.builder()
+                            .key("device")
+                            .message("Device already used in another boitier")
+                            .build());
+                    BasicResponse response = BasicResponse.builder()
+                            .status(HttpStatus.BAD_REQUEST)
+                            .errorsList(errors)
+                            .build();
+                    throw new BasicException(response);
+                }
+            
+                // Check if the new sim already exists in another boitier
+                if (!boitier.getSim().getSimMicroserviceId().equals(request.getSimMicroserviceId())
+                        && simRepository.existsBySimMicroserviceId(request.getSimMicroserviceId())) {
+                    errors.add(Error.builder()
+                            .key("sim")
+                            .message("Sim already used in another boitier")
+                            .build());
+                    BasicResponse response = BasicResponse.builder()
+                            .status(HttpStatus.BAD_REQUEST)
+                            .errorsList(errors)
+                            .build();
+                    throw new BasicException(response);
+                }
+            
+                // Check if the start date is before the end date
+                if (request.getStartDate().after(request.getEndDate())) {
+                    errors.add(Error.builder()
+                            .key("startDate")
+                            .message("Start date must be before the end date")
+                            .build());
+                    BasicResponse response = BasicResponse.builder()
+                            .status(HttpStatus.BAD_REQUEST)
+                            .errorsList(errors)
+                            .build();
+                    throw new BasicException(response);
+                }
+            
+                // Check if the start date is before the current date
+                if (request.getStartDate().before(new java.util.Date())) {
+                    errors.add(Error.builder()
+                            .key("startDate")
+                            .message("Start date must be after the current date")
+                            .build());
+                    BasicResponse response = BasicResponse.builder()
+                            .status(HttpStatus.BAD_REQUEST)
+                            .errorsList(errors)
+                            .build();
+                    throw new BasicException(response);
+                }
+            
+                try {
+                    // Update device if different from current device
+                    if (!boitier.getDevice().getDeviceMicroserviceId().equals(request.getDeviceMicroserviceId())) {
+                        // Find the device from the stock microservice
+                        DeviceDTO deviceDTO = deviceService.getDeviceByIdFromMicroservice(request.getDeviceMicroserviceId());
+            
+                        // Build and save the new device
+                        Device newDevice = Device.builder()
+                                .deviceMicroserviceId(deviceDTO.getDeviceMicroserviceId())
+                                .imei(deviceDTO.getImei())
+                                .type(deviceDTO.getType())
+                                .build();
+                        newDevice = deviceRepository.save(newDevice);
+            
+                        // Change the status of the new device to pending in stock microservice
+                        Thread deviceStatusThread = new Thread(() -> {
+                            deviceService.changeDeviceStatus(request.getDeviceMicroserviceId(), "pending");
+                            // Change the status of the old device
+                            deviceService.changeDeviceStatus(boitier.getDevice().getDeviceMicroserviceId(), "non_installed");
+                        });
+                        deviceStatusThread.start();
+            
+                        // Update boitier with the new device
+                        boitier.setDevice(newDevice);
+            
+                        // Delete the old device
+                        deviceRepository.deleteById(boitier.getDevice().getId());
+                    }
+            
+                    // Update sim if different from current sim
+                    if (!boitier.getSim().getSimMicroserviceId().equals(request.getSimMicroserviceId())) {
+                        // Find the sim from the stock microservice
+                        SimDTO simDTO = simService.getSimByIdFromMicroservice(request.getSimMicroserviceId());
+            
+                        // Build and save the new sim
+                        Sim newSim = Sim.builder()
+                                .simMicroserviceId(simDTO.getSimMicroserviceId())
+                                .phone(simDTO.getPhone())
+                                .operatorName(simDTO.getOperatorName())
+                                .ccid(simDTO.getCcid())
+                                .build();
+                        newSim = simRepository.save(newSim);
+            
+                        // Change the status of the new sim to pending in stock microservice
+                        Thread simStatusThread = new Thread(() -> {
+                            simService.changeSimStatus(request.getSimMicroserviceId(), "pending");
+                            // Change the status of the old sim
+                            simService.changeSimStatus(boitier.getSim().getSimMicroserviceId(), "non_installed");
+                        });
+                        simStatusThread.start();
+            
+                        // Update boitier with the new sim
+                        boitier.setSim(newSim);
+            
+                        // Delete the old sim
+                        simRepository.deleteById(boitier.getSim().getId());
+                    }
+            
+                    // Update the subscription
+                    Subscription subscription = subscriptionRepository.findAllByBoitierId(boitier.getId()).getLast();
+                    subscription.setStartDate(request.getStartDate());
+                    subscription.setEndDate(request.getEndDate());
+                    subscriptionRepository.save(subscription);
+            
+                    // Save the updated boitier
+                    boitierRepository.save(boitier);
+            
+                    // Create DTOs for the response
+                    BoitierDTO boitierDTO = BoitierDTO.builder()
+                            .id(boitier.getId())
+                            .device(boitier.getDevice().toDTO())
+                            .sim(boitier.getSim().toDTO())
+                            .subscription(subscription.toDTO())
+                            .build();
+            
+                    // Return the response
+                    return BasicResponse.builder()
+                            .content(boitierDTO)
+                            .status(HttpStatus.OK)
+                            .message("Boitier updated successfully")
+                            .build();
+            
+                } catch (Exception e) {
+                    errors.add(Error.builder()
+                            .key("internal")
+                            .message("An error occurred while updating the boitier: " + e.getMessage())
+                            .build());
+                    BasicResponse response = BasicResponse.builder()
+                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .errorsList(errors)
+                            .build();
+                    throw new BasicException(response);
+                }
+            }
+            
+
+                                
+
+
+
+
+             
+
+
+                        // Build the device object
+
+        /*
          * Service to get all boitiers with pagination
          */
         public BasicResponse getAllBoitiers(int page, int size) {
