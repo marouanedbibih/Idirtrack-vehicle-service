@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -24,8 +25,11 @@ import com.idirtrack.vehicle_service.client.Client;
 import com.idirtrack.vehicle_service.client.ClientDTO;
 import com.idirtrack.vehicle_service.client.ClientRepository;
 import com.idirtrack.vehicle_service.client.ClientService;
+import com.idirtrack.vehicle_service.device.DeviceDTO;
 import com.idirtrack.vehicle_service.device.DeviceService;
+import com.idirtrack.vehicle_service.sim.SimDTO;
 import com.idirtrack.vehicle_service.sim.SimService;
+import com.idirtrack.vehicle_service.subscription.SubscriptionDTO;
 import com.idirtrack.vehicle_service.traccar.TracCarService;
 import com.idirtrack.vehicle_service.vehicle.https.VehicleRequest;
 import com.idirtrack.vehicle_service.vehicle.https.VehicleResponse;
@@ -208,7 +212,7 @@ public class VehicleService {
         public BasicResponse getAllVehicles(int page, int size) throws BasicException {
 
                 // Create a pagination request
-                Pageable pageable = PageRequest.of(page - 1, size);
+                Pageable pageable = PageRequest.of(page - 1, size,Sort.by(Sort.Direction.DESC, "id"));
 
                 // Get Page of vehicles
                 Page<Vehicle> vehicles = vehicleRepository.findAll(pageable);
@@ -229,6 +233,7 @@ public class VehicleService {
                                                         .id(vehicle.getClient().getId())
                                                         .name(vehicle.getClient().getName())
                                                         .company(vehicle.getClient().getCompany())
+                                                        .clientMicroserviceId(vehicle.getClient().getClientMicroserviceId())
                                                         .build();
                                         return VehicleResponse.builder()
                                                         .vehicle(vehicle.toDTO())
@@ -272,52 +277,7 @@ public class VehicleService {
                 return boitiersList;
         }
 
-        // Verify if the vehicle does not already exist by matricule
-        // public void verifyVehicleDoesNotExist(String matricule) throws BasicException
-        // {
-        // if (vehicleRepository.existsByMatricule(matricule)) {
-        // throw new BasicException(BasicResponse.builder()
-        // .message("Vehicle already exists")
-        // .messageType(MessageType.ERROR)
-        // .status(HttpStatus.BAD_REQUEST)
-        // .build());
-        // }
-        // }
-
-        // Verify if the client exists in the database, if not, check if it exists in
-        // the user microservice
-        // public Client verifyOrRegisterClient(VehicleRequest request) throws
-        // BasicException {
-        // if
-        // (!clientRepository.existsByClientMicroserviceId(request.getClientMicroserviceId()))
-        // {
-        // // Boolean result =
-        // //
-        // this.checkIfClientExistsInUserMicroservice(request.getUserMicroserviceId());
-        // // if (!result) {
-        // // throw new BasicException(BasicResponse.builder()
-        // // .message("Client does not exist")
-        // // .messageType(MessageType.ERROR)
-        // // .status(HttpStatus.BAD_REQUEST)
-        // // .build());
-        // // }
-        // return this.saveClient(request);
-        // } else {
-        // return
-        // clientRepository.findByClientMicroserviceId(request.getClientMicroserviceId());
-        // }
-        // }
-
-        // private Vehicle saveVehicleInDatabase(VehicleRequest request, Client client)
-        // {
-        // Vehicle vehicle = Vehicle.builder()
-        // .matricule(request.getMatricule())
-        // .client(client)
-        // .type(request.getType())
-        // .build();
-        // vehicle = vehicleRepository.save(vehicle);
-        // return vehicle;
-        // }
+ 
         /**
          * Retrieves detailed information about a specific vehicle by its ID.
          *
@@ -338,18 +298,94 @@ public class VehicleService {
                                 .id(vehicle.getClient().getId())
                                 .name(vehicle.getClient().getName())
                                 .company(vehicle.getClient().getCompany())
+                                .clientMicroserviceId(vehicle.getClient().getClientMicroserviceId())
                                 .build();
 
-                List<BoitierDTO> boitierDetails = Boitier.transformToDTOList(vehicle.getBoitiers());
 
+                // Build Vehicle DTO
+                VehicleDTO vehicleDTO = VehicleDTO.builder()
+                                .id(vehicle.getId())
+                                .matricule(vehicle.getMatricule())
+                                .type(vehicle.getType())
+                                .build();
+                
+                // Build the VehicleResponse
                 VehicleResponse vehicleResponse = VehicleResponse.builder()
-                                .vehicle(vehicle.toDTO())
+                                .vehicle(vehicleDTO)
                                 .client(clientDTO)
-                                .boitiersList(boitierDetails)
                                 .build();
 
                 return BasicResponse.builder()
                                 .content(vehicleResponse)
+                                .status(HttpStatus.OK)
+                                .build();
+        }
+
+        /**
+         * Retrieves the boitiers of a vehicle by its ID.
+         * 
+         * This service retrieves the boitiers of a vehicle by its ID. It performs the
+         * following steps:
+         * 1. Finds the vehicle by ID.
+         * 2. Retrieves the boitiers of the vehicle
+         * 3. Transforms the boitiers into DTOs
+         * 4. Builds and returns a {@link BasicResponse} object containing the list of
+         * boitiers and status.
+         * 
+         * @param vehicleId the ID of the vehicle to retrieve
+         */
+        public BasicResponse getVehicleBoities(Long vehicleId) throws BasicException {
+                // Find the vehicle by id
+                Vehicle vehicle = vehicleRepository.findById(vehicleId)
+                                .orElseThrow(() -> new BasicException(BasicResponse.builder()
+                                                .message("Vehicle not found")
+                                                .messageType(MessageType.ERROR)
+                                                .status(HttpStatus.NOT_FOUND)
+                                                .build()));
+
+                // Get the boitiers of the vehicle
+                List<Boitier> boitiers = vehicle.getBoitiers();
+
+                // Transform the boitiers into DTOs
+                List<BoitierDTO> boitiersDTO = boitiers.stream()
+                                .map(boitier -> {
+                                        // Get the device of the boitier
+                                        DeviceDTO deviceDTO = DeviceDTO.builder()
+                                                        .id(boitier.getDevice().getId())
+                                                        .imei(boitier.getDevice().getImei())
+                                                        .deviceMicroserviceId(boitier.getDevice().getDeviceMicroserviceId())
+                                                        .type(boitier.getDevice().getType())
+                                                        .build();
+                                        
+                                        // Get the sim of the boitier
+                                        SimDTO simDTO = SimDTO.builder()
+                                                        .id(boitier.getSim().getId())
+                                                        .phone(boitier.getSim().getPhone())
+                                                        .simMicroserviceId(boitier.getSim().getSimMicroserviceId())
+                                                        .operatorName(boitier.getSim().getOperatorName())
+                                                        .build();
+                                        
+                                        // Get the last subscription of the boitier
+                                        SubscriptionDTO subscriptionDTO = SubscriptionDTO.builder()
+                                                        .id(boitier.getSubscriptions().get(boitier.getSubscriptions().size() - 1).getId())
+                                                        .startDate(boitier.getSubscriptions().get(boitier.getSubscriptions().size() - 1).getStartDate())
+                                                        .endDate(boitier.getSubscriptions().get(boitier.getSubscriptions().size() - 1).getEndDate())
+                                                        .build();
+
+                                        // Build the boitier DTO
+                                        return BoitierDTO.builder()
+                                                        .id(boitier.getId())
+                                                        .device(deviceDTO)
+                                                        .sim(simDTO)
+                                                        .subscription(subscriptionDTO)
+                                                        .build();
+                                        
+                                })
+                                .collect(Collectors.toList());
+                
+                // Return the response
+                return BasicResponse.builder()
+                                .content(boitiersDTO)
                                 .status(HttpStatus.OK)
                                 .build();
         }

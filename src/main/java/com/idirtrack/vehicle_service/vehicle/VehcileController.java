@@ -41,7 +41,7 @@ public class VehcileController {
                     .message("Validation Error")
                     .errorsList(errors)
                     .build());
-        } 
+        }
         // If the request is valid
         else {
             // Try to create the new vehicle
@@ -111,7 +111,17 @@ public class VehcileController {
         }
     }
 
-    @GetMapping("/{vehicleId}")
+    /**
+     * Retrieves a vehicle by ID.
+     * 
+     * This endpoint handles GET requests to retrieve a vehicle by ID. It accepts the
+     * vehicle ID as a path variable and returns a ResponseEntity with the appropriate
+     * HTTP status and response body.
+     * 
+     * @param vehicleId
+     * @return a ResponseEntity containing the BasicResponse with the vehicle details
+     */
+    @GetMapping("/{vehicleId}/")
     public ResponseEntity<BasicResponse> getVehicleById(@PathVariable Long vehicleId) {
         try {
             BasicResponse response = vehicleService.getVehicleById(vehicleId);
@@ -119,6 +129,37 @@ public class VehcileController {
         } catch (BasicException e) {
             return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
         } catch (Exception e) {
+            BasicResponse response = BasicResponse.builder()
+                    .message("Internal Server Error")
+                    .build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+    /**
+     * Retrieves boities of a vehicle.
+     * 
+     * This endpoint handles GET requests to retrieve boities of a vehicle. It
+     * accepts the vehicle ID as a path variable and returns a ResponseEntity with
+     * the appropriate HTTP status and response body.
+     * 
+     * @param vehicleId the ID of the vehicle to retrieve
+     * @return a ResponseEntity containing the BasicResponse with the vehicle
+     *         details and status
+     */
+
+    @GetMapping("/{vehicleId}/boities/")
+    public ResponseEntity<BasicResponse> getVehicleBoities(@PathVariable Long vehicleId) {
+        // Try to get the vehicle boities
+        try {
+            BasicResponse response = vehicleService.getVehicleBoities(vehicleId);
+            return ResponseEntity.status(response.getStatus()).body(response);
+        } 
+        // Catch and handle BasicException
+        catch (BasicException e) {
+            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
+        } 
+        // Catch and handle any other exception
+        catch (Exception e) {
             BasicResponse response = BasicResponse.builder()
                     .message("Internal Server Error")
                     .build();
